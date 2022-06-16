@@ -1,11 +1,81 @@
 version: "3"
 services:
   nextjs:
-    build: client
+    image: nextjs
+    container_name: nextjs
+    build:
+      context: ./client
+      dockerfile: Dockerfile
     restart: always
+
+  strapi:
+    image: strapi
+    container_name: strapi
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: postgres
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PORT: ${DATABASE_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      NODE_ENV: ${NODE_ENV}
+      HOST: ${HOST}
+      PORT: ${PORT}
+      APP_KEYS: ${APP_KEYS}
+      API_TOKEN_SALT: ${API_TOKEN_SALT}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+    volumes:
+      - ./server/config:/opt/app/config
+      - ./server/src:/opt/app/src
+      - ./server/package.json:/opt/package.json
+      - ./server/yarn.lock:/opt/yarn.lock
+      - ./.env:/opt/app/.env
+      # - /app/node_modules
+      # - ./server:/app
+    # ports:
+    #   - 1337:1337
+    networks:
+      - strapi
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:12.0-alpine
+    container_name: postgres
+    platform: linux/amd64 #for platform error on Apple M1 chips
+    command: postgres -c stats_temp_directory=/tmp
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - ./data:/var/lib/postgresql/data/
+    ports:
+      - 5432:5432
+    networks:
+      - strapi
 
   nginx:
     build: nginx
     ports:
       - 80:80
+    depends_on:
+      - nextjs
+      - strapi
     restart: always
+
+# volumes:
+#   strapi-data:
+
+networks:
+  strapi:
+    name: Strapi
+    driver: bridge

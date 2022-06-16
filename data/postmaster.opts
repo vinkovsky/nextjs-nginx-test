@@ -1,0 +1,1 @@
+/usr/local/bin/postgres "-c" "stats_temp_directory=/tmp"
