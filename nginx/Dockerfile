@@ -1,11 +1,11 @@
-FROM nginx:alpine
+FROM nginx
 
 # Remove any existing config files
 RUN rm /etc/nginx/conf.d/*
 
 # Copy config files
 # *.conf files in "conf.d/" dir get included in main config
-COPY ./conf.d /etc/nginx/conf.d
+COPY ./conf.d/default.conf /etc/nginx/conf.d/
 
 # Expose the listening port
 EXPOSE 80
