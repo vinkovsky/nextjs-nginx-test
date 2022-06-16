@@ -1,34 +1,26 @@
 FROM node:16
-
 # Installing libvips-dev for sharp compatability
 RUN apt-get update && apt-get install -y libvips-dev
 
-# Set working directory
-WORKDIR /usr/app
+ARG NODE_ENV=development
+ENV NODE_ENV=${NODE_ENV}
 
-# Install PM2 globally
-RUN yarn global add pm2
+WORKDIR /opt/
 
-# Copy "package.json" and "package-lock.json" before other files
-# Utilise Docker cache to save re-installing dependencies if unchanged
 COPY ./package.json ./
 COPY ./yarn.lock ./
 
-# Install dependencies
+ENV PATH /opt/node_modules/.bin:$PATH
+
+RUN yarn config set network-timeout 600000 -g
 RUN yarn install
 
-# Copy all files
-COPY ./ ./
+WORKDIR /opt/app
 
-# Build app
+COPY ./ .
+
 RUN yarn build
 
-# Expose the listening port
 EXPOSE 1337
 
-# Run container as non-root (unprivileged) user
-# The "node" user is provided in the Node.js Alpine base image
-USER node
-
-# Launch app with PM2
-CMD ["pm2-runtime", "start", "yarn", "--interpreter", "sh", "--name", "web-interface", "--", "start"]
+CMD ["yarn", "start"]
